@@ -22,7 +22,7 @@ import scipy.stats as stats
 import math
 
 from models import Discriminator, Generator, MLP, MLP_cls, MLP_mean_std
-from load_custom_MNIST import customMNIST
+from load_custom_Omniglot import customOmniglot
 from trainer import Trainer
 
 from DCGAN_MLP import get_args, create_filtered_dataloader
@@ -142,15 +142,15 @@ transform = transforms.Compose([
     ])
 
 # load N-1 class loaders
-loader_single_class_test = [create_filtered_dataloader(args, customMNIST(root = 'data',
+loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                     label = i, train = False, transform=transform)) 
                     for i in range(NUM_LABELS)]
 
-loader_masked_class_test = [create_filtered_dataloader(args, customMNIST(root = 'data',
+loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                     label = i, train = False, transform=transform, mask_mode=True)) 
                     for i in range(NUM_LABELS)]
 
-test_dataset = datasets.MNIST(
+test_dataset = datasets.Omniglot(
     root='data',
     train=False,
     download=True,
