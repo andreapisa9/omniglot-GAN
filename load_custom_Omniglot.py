@@ -29,7 +29,7 @@ class customOmniglot(datasets.Omniglot):
         if download:
             self.download()
 
-        if not self._check_exists():
+        if not self._check_integrity():
             raise RuntimeError('Dataset not found.' +
                                ' You can use download=True to download it')
 
