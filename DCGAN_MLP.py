@@ -76,7 +76,7 @@ def train(args):
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
     if not os.path.exists("loaders_imgs/"):
-        of.mkdir("loaders_imgs/")
+        os.mkdir("loaders_imgs/")
     
     # set the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
