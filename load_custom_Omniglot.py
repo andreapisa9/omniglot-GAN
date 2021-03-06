@@ -15,13 +15,13 @@ from PIL import Image
 
 
 class customOmniglot(datasets.Omniglot):
-    def __init__(self, root, label, train=True, transform=None, target_transform=None,
+    def __init__(self, root, label, background=True, transform=None, target_transform=None,
                  download=False, mask_mode = False):
         super(customOmniglot, self).__init__(root, transform=transform,
                                     target_transform=target_transform)
 
         self.label = label
-        self.train = train  # training set or test set
+        self.train = background  # training set or test set
 
         # if True create loader with N - 1 classes
         self.mask_mode = mask_mode
