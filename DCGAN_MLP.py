@@ -19,7 +19,7 @@ import ftplib
 import argparse
 
 from models import Discriminator, Generator, MLP, MLP_cls, MLP_mean_std
-from load_custom_MNIST import customMNIST
+from load_custom_Omniglot import customOmniglot
 from utils import createAntidomain
 from trainer import Trainer
 
@@ -76,7 +76,7 @@ def train(args):
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
     if not os.path.exists("loaders_imgs/"):
-        of.mkdir("loaders_imgs/")
+        os.mkdir("loaders_imgs/")
     
     # set the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -88,17 +88,17 @@ def train(args):
         #transforms.Normalize((0.1307,), (0.3081,))
         ])
 
-    # load mnist
-    train_dataset = datasets.MNIST(
+    # load Omniglot
+    train_dataset = datasets.Omniglot(
         root='data',
-        train=True,
+        background=True,
         download=True,
         transform=transform
     )
 
-    test_dataset = datasets.MNIST(
+    test_dataset = datasets.Omniglot(
         root='data',
-        train=False,
+        background=False,
         download=True,
         transform=transform
     )
@@ -115,20 +115,20 @@ def train(args):
         batch_size=args.batch_size
     )
 
-    # load single class loaders using a custom MNIST loader
-    loader_single_class = [create_filtered_dataloader(args, customMNIST(root = 'data',
+    # load single class loaders using a custom Omniglot loader
+    loader_single_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                         label = i, transform=transform)) 
                         for i in range(NUM_LABELS)]
 
-    loader_single_class_test = [create_filtered_dataloader(args, customMNIST(root = 'data',
+    loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                         label = i, train = False, transform=transform)) 
                         for i in range(NUM_LABELS)]
 
     # load N-1 class loaders (load each class except 1)
-    loader_masked_class = [create_filtered_dataloader(args, customMNIST(root = 'data',
+    loader_masked_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                         label = i, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
 
-    loader_masked_class_test = [create_filtered_dataloader(args, customMNIST(root = 'data',
+    loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
                         label = i, train = False, transform=transform, mask_mode=True)) 
                         for i in range(NUM_LABELS)]
     ######################################################################################
