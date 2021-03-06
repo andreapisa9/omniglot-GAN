@@ -91,14 +91,14 @@ def train(args):
     # load Omniglot
     train_dataset = datasets.Omniglot(
         root='data',
-        #train=True,
+        background=True,
         download=True,
         transform=transform
     )
 
     test_dataset = datasets.Omniglot(
         root='data',
-        #train=False,
+        background=False,
         download=True,
         transform=transform
     )
