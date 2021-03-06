@@ -85,7 +85,7 @@ loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root
 
 test_dataset = datasets.Omniglot(
     root='data',
-    train=False,
+    background=False,
     download=True,
     transform=transform
 )
