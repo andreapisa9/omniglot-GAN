@@ -15,84 +15,94 @@ from PIL import Image
 
 
 class customOmniglot(datasets.Omniglot):
-    def __init__(self, root, label, background=True, transform=None, target_transform=None,
-                 download=False, mask_mode = False):
-        super(customOmniglot, self).__init__(root, transform=transform,
-                                    target_transform=target_transform)
+	
+	folder = 'omniglot-py'
+	download_url_prefix = 'https://github.com/brendenlake/omniglot/raw/master/python'
+	zips_md5 = {
+		'images_background': '68d2efa1b9178cc56df9314c21c6e718',
+		'images_evaluation': '6b91aef0f799c5bb55b94e3f2daec811'
+	}
 
-        self.label = label
-        self.train = background  # training set or test set
+	def __init__(self, root: str, background: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False, mask_mode = False) -> None:
+		super(Omniglot, self).__init__(join(root, self.folder), transform=transform,
+									   target_transform=target_transform)
+		self.background = background
+		self.mask_mode = mask_mode
 
-        # if True create loader with N - 1 classes
-        self.mask_mode = mask_mode
+		if download:
+			self.download()
 
-        if download:
-            self.download()
+		if not self._check_integrity():
+			raise RuntimeError('Dataset not found or corrupted.' +
+							   ' You can use download=True to download it')
 
-        if not self._check_integrity():
-            raise RuntimeError('Dataset not found.' +
-                               ' You can use download=True to download it')
+		self.target_folder = join(self.root, self._get_target_folder())
+		self._alphabets = list_dir(self.target_folder)
+		self._characters: List[str] = sum([[join(a, c) for c in list_dir(join(self.target_folder, a))]
+										   for a in self._alphabets], [])
+		self._character_images = [[(image, idx) for image in list_files(join(self.target_folder, character), '.png')]
+								  for idx, character in enumerate(self._characters)]
+		self._flat_character_images: List[Tuple[str, int]] = sum(self._character_images, [])
 
-        if self.train:
-            data_file = self.training_file
-        else:
-            data_file = self.test_file
-        self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
+		self.label_data = []
+		self.label_target = []
 
-        self.label_data = []
-        self.label_target = []
+		if self.mask_mode == False:
+			#Load only 1 label
+			for i, (d,l) in enumerate(zip(self.data,self.targets)):
+				if(int(l) == self.label):
+					self.label_data.append(d)
+					self.label_target.append(l)
 
-        if self.mask_mode == False:
-            # Load only one label
-            for i, (d,l) in enumerate(zip(self.data,self.targets)):
-                if(int(l) == self.label):
-                    self.label_data.append(d)
-                    self.label_target.append(l)
-            
-            print("LabelOmniglot {}".format(self.label))
-        elif self.mask_mode == True:
-            # Load N -1 labels
-            for i, (d,l) in enumerate(zip(self.data,self.targets)):
-                if(int(l) != self.label):
-                    self.label_data.append(d)
-                    self.label_target.append(l)
+			print("LabelOmniglot {}".format(self.label))
 
-            print("LabelOmniglot masked {}".format(self.label))
+		else:
+			#Load N-1 labels
+			for i, (d,l) in enumerate(zip(self.data,self.targets)):
+				if(int(l) != self.label):
+					self.label_data.append(d)
+					self.label_target.append(l)
 
-       
+			print("LabelOmniglot masked {}".format(self.label))
 
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
+	def __len__(self) -> int:
+		return len(self._flat_character_images)
 
-        Returns:
-            tuple: (image, target,mean_pixel) where target is index of the target class.
-        """
-        
-        img, target = self.label_data[index], int(self.label_target[index])
-        
+	def __getitem__(self, index: int) -> Tuple[Any, Any]:
+		"""
+		Args:
+			index (int): Index
 
-        # doing this so that it is consistent with all other datasets
-        # to return a PIL Image
-        img = Image.fromarray(img.numpy(), mode='L')
-        
-        if self.transform is not None:
-            img = self.transform(img)
-            
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-        
-        
-        return img, target
+		Returns:
+			tuple: (image, target) where target is index of the target character class.
+		"""
+		image_name, character_class = self._flat_character_images[index]
+		image_path = join(self.target_folder, self._characters[character_class], image_name)
+		image = Image.open(image_path, mode='r').convert('L')
 
-    def __len__(self):
-        return len(self.label_data)
+		if self.transform:
+			image = self.transform(image)
 
-    @property
-    def raw_folder(self):
-        return os.path.join(self.root, 'Omniglot', 'raw')
+		if self.target_transform:
+			character_class = self.target_transform(character_class)
 
-    @property
-    def processed_folder(self):
-        return os.path.join(self.root, 'Omniglot', 'processed')
+		return image, character_class
+
+	def _check_integrity(self) -> bool:
+		zip_filename = self._get_target_folder()
+		if not check_integrity(join(self.root, zip_filename + '.zip'), self.zips_md5[zip_filename]):
+			return False
+		return True
+
+	def download(self) -> None:
+		if self._check_integrity():
+			print('Files already downloaded and verified')
+			return
+
+		filename = self._get_target_folder()
+		zip_filename = filename + '.zip'
+		url = self.download_url_prefix + '/' + zip_filename
+		download_and_extract_archive(url, self.root, filename=zip_filename, md5=self.zips_md5[filename])
+
+	def _get_target_folder(self) -> str:
+		return 'images_background' if self.background else 'images_evaluation'
