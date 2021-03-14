@@ -12,6 +12,7 @@ from torchvision.utils import save_image
 from torchvision import datasets, transforms
 
 from PIL import Image
+from typing import Optional
 
 
 class customOmniglot(datasets.Omniglot):
