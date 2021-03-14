@@ -121,7 +121,7 @@ def train(args):
                         for i in range(NUM_LABELS)]
 
     loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, train = False, transform=transform)) 
+                        label = i, background = False, transform=transform)) 
                         for i in range(NUM_LABELS)]
 
     # load N-1 class loaders (load each class except 1)
@@ -129,7 +129,7 @@ def train(args):
                         label = i, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
 
     loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, train = False, transform=transform, mask_mode=True)) 
+                        label = i, background = False, transform=transform, mask_mode=True)) 
                         for i in range(NUM_LABELS)]
     ######################################################################################
 

@@ -10,9 +10,11 @@ from torch.utils.data import DataLoader, TensorDataset, RandomSampler
 
 from torchvision.utils import save_image
 from torchvision import datasets, transforms
+from torchvision.datasets.utils import download_and_extract_archive, check_integrity, list_dir, list_files
 
 from PIL import Image
-from typing import Optional
+from typing import Optional, Callable, Tuple, List, Any
+from os.path import join
 
 
 class customOmniglot(datasets.Omniglot):
@@ -24,9 +26,10 @@ class customOmniglot(datasets.Omniglot):
 		'images_evaluation': '6b91aef0f799c5bb55b94e3f2daec811'
 	}
 
-	def __init__(self, root: str, background: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False, mask_mode = False) -> None:
-		super(Omniglot, self).__init__(join(root, self.folder), transform=transform,
+	def __init__(self, root: str, label: int, background: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False, mask_mode = False) -> None:
+		super(customOmniglot, self).__init__(join(root, self.folder), transform=transform,
 									   target_transform=target_transform)
+		self.label = label
 		self.background = background
 		self.mask_mode = mask_mode
 
