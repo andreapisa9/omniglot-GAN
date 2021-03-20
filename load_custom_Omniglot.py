@@ -26,8 +26,8 @@ class customOmniglot(datasets.Omniglot):
 		'images_evaluation': '6b91aef0f799c5bb55b94e3f2daec811'
 	}
 
-	def __init__(self, root: str, label: int, background: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False, mask_mode = False) -> None:
-		super(customOmniglot, self).__init__(join(root, self.folder), transform=transform,
+	def __init__(self, root: str, label: int, background: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False, mask_mode: bool = False) -> None:
+		super(datasets.Omniglot, self).__init__(join(root, self.folder), transform=transform,
 									   target_transform=target_transform)
 		self.label = label
 		self.background = background
