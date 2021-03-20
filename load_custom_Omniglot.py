@@ -53,19 +53,19 @@ class customOmniglot(datasets.Omniglot):
 
 		if self.mask_mode == False:
 			#Load only 1 label
-			for i, (d,l) in enumerate(zip(self.data,self.targets)):
-				if(int(l) == self.label):
+			for i, (d,l) in enumerate(zip(self._characters,self._flat_character_images)):
+				if(int(l[1]) == self.label):
 					self.label_data.append(d)
-					self.label_target.append(l)
+					self.label_target.append(l[1])
 
 			print("LabelOmniglot {}".format(self.label))
 
 		else:
 			#Load N-1 labels
-			for i, (d,l) in enumerate(zip(self.data,self.targets)):
-				if(int(l) != self.label):
+			for i, (d,l) in enumerate(zip(self._characters,self._flat_character_images)):
+				if(int(l[1]) != self.label):
 					self.label_data.append(d)
-					self.label_target.append(l)
+					self.label_target.append(l[1])
 
 			print("LabelOmniglot masked {}".format(self.label))
 
