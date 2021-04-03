@@ -33,10 +33,9 @@ La versione mlp_mean_std usa un solo MLP e il reparametrization trick
 La versione concat fa 30% classe 70% rumore
 '''
 
-
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_labels', type=int, default=10, help='numbers of label in the dataset')
+    parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch size')
     parser.add_argument('--image_size', type=int, default=32, help='image size')
     parser.add_argument('--nz', type=int, default=100, help='size of input noise')
@@ -46,7 +45,7 @@ def get_args():
     parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate')
     parser.add_argument('--niterations', type=int, default=40000, help='total training iterations')
     parser.add_argument('--sample_path', type=str, default='samples/', help='sample images folder')
-    parser.add_argument('--model_path', type=str, default='models/', help='modele folder')
+    parser.add_argument('--model_path', type=str, default='models/', help='models folder')
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
     return parser.parse_args()
@@ -61,7 +60,6 @@ def create_filtered_dataloader(args,data_list):
             batch_size=args.batch_size,
             num_workers=4
     )
-
 
 ######################################################################################
 def train(args):
@@ -219,7 +217,7 @@ def train(args):
         
         # train the GAN model with task images for N meta iterations
         err_D, err_MLP = trainer.train_GAN_on_task(single_loader, masked_loader, train_loader)
-        # traing G for 1 iteration
+        # train G for 1 iteration
         err_G = trainer.train_G()
 
         # Interpolate between current weights and trained weights from this task
@@ -280,5 +278,6 @@ def train(args):
         torch.cuda.empty_cache()
 
 if __name__ == '__main__':
+
     args = get_args()
     train(args)
