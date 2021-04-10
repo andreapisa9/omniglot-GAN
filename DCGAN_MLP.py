@@ -50,9 +50,6 @@ def get_args():
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
     return parser.parse_args()
 
-
-
-
 def create_filtered_dataloader(args,data_list):
     return DataLoader(
             data_list,
@@ -61,8 +58,45 @@ def create_filtered_dataloader(args,data_list):
             num_workers=4
     )
 
+'''
+def save_checkpoint(models, optimizers, state_dicts, args):
+
+    try:
+        os.mkdir("./checkpoint") #save it in drive
+    except FileExistsError:
+        print("Checkpoint folder already exists. Cleaning...\n")
+        os.remove("./checkpoint/*")
+        print("Folder cleaned. Starting saving process...\n")
+
+    for i in models:
+        #save models
+    for j in optimizers:
+        #save optimizers
+    for k in state_dicts:
+        #save state_dicts
+    for l in args:
+        #save args
+
+def load_checkpoint(args):
+
+    if (not os.path.exists("./checkpoint")): #folder exists
+        with open("./checkpoint/args.txt"):
+            #open old_args.txt file, read old_args
+        if (): #args are the same
+            #load checkpoint
+        else:
+            #ask what to do...
+            if (): #remove old data
+                train(args, True)
+            else: #keep old data
+                #load...
+'''
+
 ######################################################################################
-def train(args):
+def train(args, skip_checkpoint=False):
+
+    #if (not skip_checkpoint):
+    #   load_checkpoint(args)
 
     print("MODE: {}".format(args.mode))
 
@@ -150,29 +184,28 @@ def train(args):
             nn.init.constant_(m.bias.data, 0)
 
 
-    model_D = Discriminator().to(device)#.cuda()
+    model_D = Discriminator().to(device).cuda()
     model_D.apply(weights_init)
 
-    model_G = Generator().to(device)#.cuda()
+    model_G = Generator().to(device).cuda()
     model_G.apply(weights_init)
 
     
-    model_MLP = MLP().to(device)#.cuda()
+    model_MLP = MLP().to(device).cuda()
     model_MLP.apply(weights_init)
 
     if args.mode == 'standard' or args.mode == 'noise' or args.mode == 'concat':
-        model_MLP_cls = MLP_cls().to(device)#.cuda()
+        model_MLP_cls = MLP_cls().to(device).cuda()
         model_MLP_cls.apply(weights_init)
 
     if args.mode == 'mlp_mean_std':
-        model_MLP_cls = MLP_mean_std().to(device)#.cuda()
+        model_MLP_cls = MLP_mean_std().to(device).cuda()
         model_MLP_cls.apply(weights_init)
 
     fixed_noise = torch.randn(64, args.nz, 1, 1, device=device)
 
     # Initialize BCELoss function
     #criterion_class = nn.BCELoss()
-
 
     # Setup Adam optimizers for all nets
     optimizer_D = optim.Adam(model_D.parameters(), lr=args.lr, betas=(args.beta1, 0.999))
