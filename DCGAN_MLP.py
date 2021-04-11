@@ -209,6 +209,10 @@ def train(args):
                 models["D"] = checkpoint["models_D"]
                 models["MLP"] = checkpoint["models_MLP"]
                 models["MLP_cls"] = checkpoint["models_MLP_cls"]
+                optimizers["G"].load_state_dict(checkpoint["optimizer_G_state_dict"])
+                optimizers["D"].load_state_dict(checkpoint["optimizer_D_state_dict"])
+                optimizers["MLP"].load_state_dict(checkpoint["optimizer_MLP_state_dict"])
+                optimizers["MLP_cls"].load_state_dict(checkpoint["optimizer_MLP_cls_state_dict"])
                 iterations_made = checkpoint["iteration"]
                 print("Previously saved training has been found. Restarting...\n")
 
@@ -289,7 +293,11 @@ def train(args):
                  'models_D': models["D"],
                  'models_G': models["G"],
                  'models_MLP': models["MLP"],
-                 'models_MLP_cls': models["MLP_cls"]},
+                 'models_MLP_cls': models["MLP_cls"],
+                 'optimizer_D_state_dict': optimizers["D"].state_dict(),
+                 'optimizer_G_state_dict': optimizers["G"].state_dict(),
+                 'optimizer_MLP_state_dict': optimizers["MLP"].state_dict(),
+                 'optimizer_MLP_cls_state_dict': optimizers["MLP_cls"].state_dict()},
                  args.model_path + "models.pth")
             #torch.save(models["D"], args.model_path + "models_D.pth")
             #torch.save(models["G"], args.model_path + "models_G.pth")
