@@ -15,6 +15,7 @@ from random import randrange
 
 from matplotlib import pyplot as plt
 import os
+import errno
 import ftplib
 import argparse
 
@@ -45,9 +46,10 @@ def get_args():
     parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate')
     parser.add_argument('--niterations', type=int, default=40000, help='total training iterations')
     parser.add_argument('--sample_path', type=str, default='samples/', help='sample images folder')
-    parser.add_argument('--model_path', type=str, default='models/', help='models folder')
+    parser.add_argument('--model_path', type=str, default='./checkpoint/', help='models folder')
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
+    parser.add_argument('--load_if_paused', type=bool, default=False, help='if checkpoint savings are found, restart from there')
     return parser.parse_args()
 
 def create_filtered_dataloader(args,data_list):
@@ -58,45 +60,8 @@ def create_filtered_dataloader(args,data_list):
             num_workers=4
     )
 
-'''
-def save_checkpoint(models, optimizers, state_dicts, args):
-
-    try:
-        os.mkdir("./checkpoint") #save it in drive
-    except FileExistsError:
-        print("Checkpoint folder already exists. Cleaning...\n")
-        os.remove("./checkpoint/*")
-        print("Folder cleaned. Starting saving process...\n")
-
-    for i in models:
-        #save models
-    for j in optimizers:
-        #save optimizers
-    for k in state_dicts:
-        #save state_dicts
-    for l in args:
-        #save args
-
-def load_checkpoint(args):
-
-    if (not os.path.exists("./checkpoint")): #folder exists
-        with open("./checkpoint/args.txt"):
-            #open old_args.txt file, read old_args
-        if (): #args are the same
-            #load checkpoint
-        else:
-            #ask what to do...
-            if (): #remove old data
-                train(args, True)
-            else: #keep old data
-                #load...
-'''
-
 ######################################################################################
-def train(args, skip_checkpoint=False):
-
-    #if (not skip_checkpoint):
-    #   load_checkpoint(args)
+def train(args):
 
     print("MODE: {}".format(args.mode))
 
@@ -184,22 +149,22 @@ def train(args, skip_checkpoint=False):
             nn.init.constant_(m.bias.data, 0)
 
 
-    model_D = Discriminator().to(device).cuda()
+    model_D = Discriminator().to(device)#.cuda()
     model_D.apply(weights_init)
 
-    model_G = Generator().to(device).cuda()
+    model_G = Generator().to(device)#.cuda()
     model_G.apply(weights_init)
 
     
-    model_MLP = MLP().to(device).cuda()
+    model_MLP = MLP().to(device)#.cuda()
     model_MLP.apply(weights_init)
 
     if args.mode == 'standard' or args.mode == 'noise' or args.mode == 'concat':
-        model_MLP_cls = MLP_cls().to(device).cuda()
+        model_MLP_cls = MLP_cls().to(device)#.cuda()
         model_MLP_cls.apply(weights_init)
 
     if args.mode == 'mlp_mean_std':
-        model_MLP_cls = MLP_mean_std().to(device).cuda()
+        model_MLP_cls = MLP_mean_std().to(device)#.cuda()
         model_MLP_cls.apply(weights_init)
 
     fixed_noise = torch.randn(64, args.nz, 1, 1, device=device)
@@ -234,11 +199,27 @@ def train(args, skip_checkpoint=False):
     # class that is used to train the network
     trainer = Trainer(args, models, optimizers, device, fixed_noise)
 
+    iterations_made = 0
+    if args.load_if_paused:
+
+        try:
+            if (os.path.exists(args.model_path)):
+                checkpoint = torch.load(args.model_path + "models.pth")
+                models["G"] = checkpoint["models_G"]
+                models["D"] = checkpoint["models_D"]
+                models["MLP"] = checkpoint["models_MLP"]
+                models["MLP_cls"] = checkpoint["models_MLP_cls"]
+                iterations_made = checkpoint["iteration"]
+                print("Previously saved training has been found. Restarting...\n")
+
+        except FileNotFoundError:
+            print("No previously saved training has been found. Starting fresh...\n")
+
     # Reptile training loop
-    for iteration in range(args.niterations):
+    for iteration in range(iterations_made, args.niterations):
 
         random = randrange(NUM_LABELS)
-        
+
         #clone models
         weights_before_D = deepcopy(models["D"].state_dict())
         weights_before_MLP = deepcopy(models["MLP"].state_dict())
@@ -302,13 +283,26 @@ def train(args, skip_checkpoint=False):
 
         # save models
         if iteration%10000 == 0:
-            torch.save(models["D"], args.model_path + "{}_D.pth".format(iteration))
-            torch.save(models["G"], args.model_path + "{}_G.pth".format(iteration))
-            torch.save(models["MLP"], args.model_path + "{}_MLP.pth".format(iteration))
-            torch.save(models["MLP_cls"], args.model_path + "{}_MLP_cls.pth".format(iteration))
-
+            print("Saving checkpoint...\n")
+            torch.save(
+                {'iteration': iteration,
+                 'models_D': models["D"],
+                 'models_G': models["G"],
+                 'models_MLP': models["MLP"],
+                 'models_MLP_cls': models["MLP_cls"]},
+                 args.model_path + "models.pth")
+            #torch.save(models["D"], args.model_path + "models_D.pth")
+            #torch.save(models["G"], args.model_path + "models_G.pth")
+            #torch.save(models["MLP"], args.model_path + "models_MLP.pth")
+            #torch.save(models["MLP_cls"], args.model_path + "models_MLP_cls.pth")
 
         torch.cuda.empty_cache()
+
+        if (iteration + 1) == args.niterations:
+
+            for f in os.listdir(args.model_path):
+                os.remove(os.path.join(dir, f))
+            os.rmdir(args.model_path)
 
 if __name__ == '__main__':
 
