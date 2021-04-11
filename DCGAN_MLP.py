@@ -305,6 +305,7 @@ def train(args):
             #torch.save(models["MLP_cls"], args.model_path + "models_MLP_cls.pth")
 
         torch.cuda.empty_cache()
+        print("Checkpoint successfully saved.\n")
 
         if (iteration + 1) == args.niterations:
 
