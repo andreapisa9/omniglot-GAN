@@ -286,7 +286,7 @@ def train(args):
                 models["MLP_cls"].load_state_dict(weights_before_MLP_cls)
 
         # save models
-        if iteration%10000 == 0:
+        if iteration%5000 == 0:
             print("Saving checkpoint...\n")
             torch.save(
                 {'iteration': iteration,
