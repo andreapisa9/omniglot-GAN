@@ -36,16 +36,16 @@ La versione concat fa 30% classe 70% rumore
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset')
+    parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset') #20
     parser.add_argument('--batch_size', type=int, default=64, help='training batch size')
     parser.add_argument('--image_size', type=int, default=32, help='image size')
     parser.add_argument('--nz', type=int, default=100, help='size of input noise')
     parser.add_argument('--lr', type=float, default=0.0002, help='training learning rate')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for Adam')
     parser.add_argument('--innerepochs', type=int, default=5, help='number of meta-iterations')
-    parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate')
+    parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate') #0.1
     parser.add_argument('--niterations', type=int, default=40000, help='total training iterations')
-    parser.add_argument('--sample_path', type=str, default='samples/', help='sample images folder')
+    parser.add_argument('--sample_path', type=str, default='./samples/', help='sample images folder')
     parser.add_argument('--model_path', type=str, default='./checkpoint/', help='models folder')
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
@@ -130,13 +130,14 @@ def train(args):
                         for i in range(NUM_LABELS)]
     ######################################################################################
 
-    # for i in range(NUM_LABELS):
-    #     sc_batch,_ = next(iter(loader_single_class_test[i]))
-    #     masked_batch,_ = next(iter(loader_masked_class_test[i]))
+    #Assess loading correctness
+    for i in range(NUM_LABELS):
+        sc_batch,_ = next(iter(loader_single_class_test[i]))
+        masked_batch,_ = next(iter(loader_masked_class_test[i]))
 
-    #     print("SAVING IMGS {}".format(i))
-    #     save_image(sc_batch,f"loaders_imgs/sc_{i}.png")
-    #     save_image(masked_batch,f"loaders_imgs/masked_{i}.png")
+        print("SAVING IMGS {}".format(i))
+        save_image(sc_batch,f"loaders_imgs/sc_{i}.png")
+        save_image(masked_batch,f"loaders_imgs/masked_{i}.png")
 
     # exit(0)
     # custom weights initialization 
@@ -205,10 +206,10 @@ def train(args):
         try:
             if (os.path.exists(args.model_path)):
                 checkpoint = torch.load(args.model_path + "models.pth")
-                models["G"] = checkpoint["models_G"]
-                models["D"] = checkpoint["models_D"]
-                models["MLP"] = checkpoint["models_MLP"]
-                models["MLP_cls"] = checkpoint["models_MLP_cls"]
+                models["G"].load_state_dict(checkpoint["models_G"])
+                models["D"].load_state_dict(checkpoint["models_D"])
+                models["MLP"].load_state_dict(checkpoint["models_MLP"])
+                models["MLP_cls"].load_state_dict(checkpoint["models_MLP_cls"])
                 optimizers["G"].load_state_dict(checkpoint["optimizer_G_state_dict"])
                 optimizers["D"].load_state_dict(checkpoint["optimizer_D_state_dict"])
                 optimizers["MLP"].load_state_dict(checkpoint["optimizer_MLP_state_dict"])
@@ -286,26 +287,26 @@ def train(args):
                 models["MLP_cls"].load_state_dict(weights_before_MLP_cls)
 
         # save models
-        if iteration%5000 == 0:
+        if iteration%2000 == 0:
             print("Saving checkpoint...\n")
             torch.save(
                 {'iteration': iteration,
-                 'models_D': models["D"],
-                 'models_G': models["G"],
-                 'models_MLP': models["MLP"],
-                 'models_MLP_cls': models["MLP_cls"],
+                 'models_D': models["D"].state_dict(),
+                 'models_G': models["G"].state_dict(),
+                 'models_MLP': models["MLP"].state_dict(),
+                 'models_MLP_cls': models["MLP_cls"].state_dict(),
                  'optimizer_D_state_dict': optimizers["D"].state_dict(),
                  'optimizer_G_state_dict': optimizers["G"].state_dict(),
                  'optimizer_MLP_state_dict': optimizers["MLP"].state_dict(),
                  'optimizer_MLP_cls_state_dict': optimizers["MLP_cls"].state_dict()},
                  args.model_path + "models.pth")
+            print("Checkpoint successfully saved.\n")
             #torch.save(models["D"], args.model_path + "models_D.pth")
             #torch.save(models["G"], args.model_path + "models_G.pth")
             #torch.save(models["MLP"], args.model_path + "models_MLP.pth")
             #torch.save(models["MLP_cls"], args.model_path + "models_MLP_cls.pth")
 
         torch.cuda.empty_cache()
-        print("Checkpoint successfully saved.\n")
 
         if (iteration + 1) == args.niterations:
 
