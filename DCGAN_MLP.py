@@ -136,8 +136,8 @@ def train(args):
         masked_batch,_ = next(iter(loader_masked_class_test[i]))
 
         print("SAVING IMGS {}".format(i))
-        save_image(sc_batch,f"./drive/MyDrive/loaders_imgs/sc_{i}.png") #remove '/drive/MyDrive/' if not on CoLab
-        save_image(masked_batch,f"./drive/MyDrive/loaders_imgs/masked_{i}.png")
+        save_image(sc_batch,f"./drive/MyDrive/thesis/loaders_imgs/sc_{i}.png") #remove '/drive/MyDrive/thesis/' if not on CoLab
+        save_image(masked_batch,f"./drive/MyDrive/thesis/loaders_imgs/masked_{i}.png")
 
     # exit(0)
     # custom weights initialization 
