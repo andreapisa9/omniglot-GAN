@@ -72,8 +72,8 @@ def train(args):
         os.mkdir(args.sample_path)
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
-    if not os.path.exists("loaders_imgs/"):
-        os.mkdir("loaders_imgs/")
+    if not os.path.exists("./drive/MyDrive/thesis/loaders_imgs/"): #change to fit your needs
+        os.mkdir("./drive/MyDrive/thesis/loaders_imgs/")
     
     # set the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
