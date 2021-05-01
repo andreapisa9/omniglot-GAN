@@ -40,6 +40,7 @@ class customOmniglot(datasets.Omniglot):
 			raise RuntimeError('Dataset not found or corrupted.' +
 							   ' You can use download=True to download it')
 
+		#UNDERSTAND FULLY WHAT ARE THESE COMPOSED OF BEFORE MAKING A MESS
 		self.target_folder = join(self.root, self._get_target_folder())
 		self._alphabets = list_dir(self.target_folder)
 		self._characters: List[str] = sum([[join(a, c) for c in list_dir(join(self.target_folder, a))]
@@ -55,13 +56,15 @@ class customOmniglot(datasets.Omniglot):
 			#Load only 1 label
 			#TO FIX
 			for i, (d,l) in enumerate(zip(self._characters,self._flat_character_images)):
+				print(d)
+				print(l)
 				if(int(l[1]) == self.label):
 					self.label_data.append(d)
 					self.label_target.append(l[1])
 
 			print("LabelOmniglot {}".format(self.label))
-			print(self.label_data, '\n')
-			print(self.label_target, '\n')
+			#print(self.label_data)
+			#print(self.label_target, '\n')
 
 		else:
 			#Load N-1 labels
@@ -72,8 +75,8 @@ class customOmniglot(datasets.Omniglot):
 					self.label_target.append(l[1])
 
 			print("LabelOmniglot masked {}".format(self.label))
-			print(self.label_data, '\n')
-			print(self.label_target, '\n')
+			#print(self.label_data)
+			#print(self.label_target, '\n')
 
 	def __len__(self) -> int:
 		return len(self._flat_character_images)
