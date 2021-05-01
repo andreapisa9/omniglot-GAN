@@ -203,6 +203,7 @@ def train(args):
     iterations_made = 0
     if args.load_if_paused:
 
+        #try to load saved data
         try:
             if (os.path.exists(args.model_path)):
                 checkpoint = torch.load(args.model_path + "models.pth")
@@ -275,7 +276,7 @@ def train(args):
                 err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, train_loader)
 
                 with torch.no_grad():
-                    out_imgs_fake = trainer.generate_sample().detach().cpu()
+                    out_imgs_fake = trainer.generate_sample().detach().cpu() #<---FIX HERE
                     
                 # save the generated images
                 print("SAVING IMGS {}".format(n))

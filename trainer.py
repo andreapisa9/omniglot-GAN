@@ -220,10 +220,14 @@ class Trainer(object):
         return errD, err_mlp
 
 
-    def generate_sample(self):                
+    def generate_sample(self):
+        '''Ragiono ad alta voce:
+        il main chiama generate_samples n volte in un for;
+        generate_samples chiama MLP_pass e model_G n volte, quindi.
+        Come fanno MLP_pass e model_G a dare lo stesso risultato n volte? E' per via di torch.no_grad()?'''
         self.out_z = self.MLP_pass(self.fixed_noise, self.feat) 
         out_G = self.model_G(self.out_z.detach())  
-        # return real images concatenadet with generated images    
+        # return real images concatenated with generated images    
         return torch.cat((self.real_cpu, out_G), dim = 0)
     
     def get_z(self):
