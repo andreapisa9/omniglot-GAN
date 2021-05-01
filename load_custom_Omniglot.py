@@ -86,7 +86,7 @@ class customOmniglot(datasets.Omniglot):
 		Returns:
 			tuple: (image, target) where target is index of the target character class.
 		"""
-		image_name, character_class = self._flat_character_images[index]
+		image_name, character_class = self._flat_character_images[index] #<---!!!!!!!!!!
 		image_path = join(self.target_folder, self._characters[character_class], image_name)
 		image = Image.open(image_path, mode='r').convert('L')
 

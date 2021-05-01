@@ -87,14 +87,14 @@ def train(args):
 
     # load Omniglot
     train_dataset = datasets.Omniglot(
-        root='./drive/MyDrive/thesis/data', #change to your liking
+        root='./data', #change to your liking
         background=True,
         download=True,
         transform=transform
     )
 
     test_dataset = datasets.Omniglot(
-        root='./drive/MyDrive/thesis/data', #change to your liking
+        root='./data', #change to your liking
         background=False,
         download=True,
         transform=transform
