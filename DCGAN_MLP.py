@@ -114,19 +114,19 @@ def train(args):
 
     # load single class loaders using a custom Omniglot loader
     loader_single_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, transform=transform)) 
+                        label = i, num_labels = NUM_LABELS, transform=transform)) 
                         for i in range(NUM_LABELS)]
 
     loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, background = False, transform=transform)) 
+                        label = i, num_labels = NUM_LABELS, background = False, transform=transform)) 
                         for i in range(NUM_LABELS)]
 
     # load N-1 class loaders (load each class except 1)
     loader_masked_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
+                        label = i, num_labels = NUM_LABELS, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
 
     loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, background = False, transform=transform, mask_mode=True)) 
+                        label = i, num_labels = NUM_LABELS, background = False, transform=transform, mask_mode=True)) 
                         for i in range(NUM_LABELS)]
     ######################################################################################
 
