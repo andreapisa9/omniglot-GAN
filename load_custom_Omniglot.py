@@ -47,7 +47,7 @@ class customOmniglot(datasets.Omniglot):
 
 		self._characters: List[str] = sum([[join(a, c) for c in list_dir(join(self.target_folder, a))]
 										   for a in self._alphabets], [])
-		print(self._characters)
+		#print(self._characters)
 		
 		self._character_images = [[(image, idx) for image in list_files(join(self.target_folder, character), '.png')]
 								  for idx, character in enumerate(self._characters)]
@@ -64,7 +64,7 @@ class customOmniglot(datasets.Omniglot):
 				self.label_data.append(image_name)
 				self.label_target.append(idx)
 
-			print(self.label_target)
+			#print(self.label_target)
 			print("LabelOmniglot {}".format(self.label))
 
 		else:
