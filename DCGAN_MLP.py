@@ -5,7 +5,7 @@ import torch.optim as optim
 import torchvision.datasets as datasets
 import numpy as np
 import matplotlib
-from torch.utils.data import DataLoader, TensorDataset, RandomSampler
+from torch.utils.data import DataLoader, TensorDataset, RandomSampler, SequentialSampler
 from matplotlib import pyplot as plt
 from torchvision.utils import save_image
 import torchvision.utils as vutils
@@ -72,8 +72,8 @@ def train(args):
         os.mkdir(args.sample_path)
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
-    if not os.path.exists("./drive/MyDrive/thesis/loaders_imgs/"): #change to fit your needs
-        os.mkdir("./drive/MyDrive/thesis/loaders_imgs/")
+    if not os.path.exists("./loaders_imgs/"):
+        os.mkdir("./loaders_imgs/")
     
     # set the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -100,34 +100,66 @@ def train(args):
         transform=transform
     )
 
-    # train loader 
-    train_loader = DataLoader(
-        train_dataset,
-        sampler=RandomSampler(train_dataset),
-        batch_size=args.batch_size
-    )
-    test_loader = DataLoader(
-        test_dataset,
-        sampler=RandomSampler(test_dataset),
-        batch_size=args.batch_size
-    )
+    loaded = False
+    #try to load dataloaders if previously saved training exists
+    if args.load_if_paused:
 
-    # load single class loaders using a custom Omniglot loader
-    loader_single_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, num_labels = NUM_LABELS, transform=transform)) 
-                        for i in range(NUM_LABELS)]
+        try:
+            if os.path.exists(args.model_path):
+                dataloaders = torch.load(args.model_path + 'dataloaders.pth')
+                train_loader = dataloaders["train_loader"]
+                test_loader = dataloaders["test_loader"]
+                loader_single_class = dataloaders["loader_single_class"]
+                loader_single_class_test = dataloaders["loader_single_class_test"]
+                loader_masked_class = dataloaders["loader_masked_class"]
+                loader_masked_class_test = dataloaders["loader_masked_class_test"]
 
-    loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, num_labels = NUM_LABELS, background = False, transform=transform)) 
-                        for i in range(NUM_LABELS)]
+                loaded = True
+                print('DataLoaders successfully recovered.\n')
 
-    # load N-1 class loaders (load each class except 1)
-    loader_masked_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, num_labels = NUM_LABELS, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
+        except FileNotFoundError:
+            print('No previously saved loaders have been found.\n')
 
-    loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
-                        label = i, num_labels = NUM_LABELS, background = False, transform=transform, mask_mode=True)) 
-                        for i in range(NUM_LABELS)]
+    if (not args.load_if_paused) or loaded == False: #create dataloaders from scratch
+
+        # train loader 
+        train_loader = DataLoader(
+            train_dataset,
+            sampler=RandomSampler(train_dataset),
+            batch_size=args.batch_size
+        )
+        test_loader = DataLoader(
+            test_dataset,
+            sampler=RandomSampler(test_dataset),
+            batch_size=args.batch_size
+        )
+
+        # load single class loaders using a custom Omniglot loader
+        loader_single_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
+                            label = i, num_labels = NUM_LABELS, transform=transform)) 
+                            for i in range(NUM_LABELS)]
+
+        loader_single_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
+                            label = i, num_labels = NUM_LABELS, background = False, transform=transform)) 
+                            for i in range(NUM_LABELS)]
+
+        # load N-1 class loaders (load each class except 1)
+        loader_masked_class = [create_filtered_dataloader(args, customOmniglot(root = 'data',
+                            label = i, num_labels = NUM_LABELS, transform=transform, mask_mode=True)) for i in range(NUM_LABELS)]
+
+        loader_masked_class_test = [create_filtered_dataloader(args, customOmniglot(root = 'data',
+                            label = i, num_labels = NUM_LABELS, background = False, transform=transform, mask_mode=True)) 
+                            for i in range(NUM_LABELS)]
+
+    #save loaders
+    torch.save({'train_loader': train_loader,
+                'test_loader': test_loader,
+                'loader_single_class': loader_single_class,
+                'loader_single_class_test': loader_single_class_test,
+                'loader_masked_class': loader_masked_class,
+                'loader_masked_class_test': loader_masked_class_test},
+               args.model_path + 'dataloaders.pth')
+    print('Loaders successfully saved.\n')
     ######################################################################################
 
     #Assess loading correctness
@@ -136,8 +168,8 @@ def train(args):
         masked_batch,_ = next(iter(loader_masked_class_test[i]))
 
         print("SAVING IMGS {}".format(i))
-        save_image(sc_batch,f"./drive/MyDrive/thesis/loaders_imgs/sc_{i}.png") #remove '/drive/MyDrive/thesis/' if not on CoLab
-        save_image(masked_batch,f"./drive/MyDrive/thesis/loaders_imgs/masked_{i}.png")
+        save_image(sc_batch,f"./loaders_imgs/sc_{i}.png")
+        save_image(masked_batch,f"./loaders_imgs/masked_{i}.png")
 
     # exit(0)
     # custom weights initialization 
@@ -149,14 +181,12 @@ def train(args):
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-
     model_D = Discriminator().to(device)#.cuda()
     model_D.apply(weights_init)
 
     model_G = Generator().to(device)#.cuda()
     model_G.apply(weights_init)
 
-    
     model_MLP = MLP().to(device)#.cuda()
     model_MLP.apply(weights_init)
 
@@ -276,11 +306,11 @@ def train(args):
                 err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, train_loader)
 
                 with torch.no_grad():
-                    out_imgs_fake = trainer.generate_sample().detach().cpu() #<---FIX HERE
+                    out_imgs_fake = trainer.generate_sample().detach().cpu()
                     
                 # save the generated images
                 print("SAVING IMGS {}".format(n))
-                save_image(out_imgs_fake,args.sample_path + f"{iteration}_{n}.png") #aggiungi percorso: "path/iterazione_classe.png" es "pippo/20000_3.png"
+                save_image(out_imgs_fake, args.sample_path + f"{iteration}_{n}.png") #aggiungi percorso: "path/iterazione_classe.png" es "pippo/20000_3.png"
                     
                 # restore the model to before the update
                 models["D"].load_state_dict(weights_before_D) # restore from snapshot  

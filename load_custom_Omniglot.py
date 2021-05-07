@@ -2,6 +2,7 @@ import os
 import argparse
 import numpy as np
 import torch
+import random
 from torch import nn
 import matplotlib.pyplot as plt
 
@@ -51,31 +52,41 @@ class customOmniglot(datasets.Omniglot):
 		
 		self._character_images = [[(image, idx) for image in list_files(join(self.target_folder, character), '.png')]
 								  for idx, character in enumerate(self._characters)]
+
+		#print(self._character_images)
 		
 		self._flat_character_images: List[Tuple[str, int]] = sum(self._character_images, [])
+
+		#print(self._flat_character_images)
 		
 		self.label_data = []
 		self.label_target = []
 
 		if self.mask_mode == False:
 			#Load only 1 label
+			#TO FIX: List Index out of range if NUM_LABELS is high
 			character_batch = self._character_images[self.label]
 			for image_name, idx in character_batch:
 				self.label_data.append(image_name)
 				self.label_target.append(idx)
 
-			#print(self.label_target)
 			print("LabelOmniglot {}".format(self.label))
 
 		else:
 			#Load N-1 labels
 			#TO FIX
-			for i in range(self.num_labels):
-				if i != self.label:
-					character_batch = self._character_images[i]
-					for image_name, idx in character_batch:
+			character_batch = [self._character_images[x] for x in range(self.num_labels)]
+			for i in (character_batch):
+				for image_name, idx in i:
+					if idx != self.label:
 						self.label_data.append(image_name)
 						self.label_target.append(idx)
+
+			#shuffle
+			label_temp = list(zip(self.label_data, self.label_target))
+			random.shuffle(label_temp)
+			self.label_data = [label_temp[i][0] for i in range(len(label_temp))]
+			self.label_target = [label_temp[i][1] for i in range(len(label_temp))]
 
 			print("LabelOmniglot masked {}".format(self.label))
 
@@ -90,8 +101,13 @@ class customOmniglot(datasets.Omniglot):
 		Returns:
 			tuple: (image, target) where target is index of the target character class.
 		"""
-		image_name = self.label_data[self.label]
-		character_class = self.label_target[self.label]
+		if self.mask_mode == False:
+			image_name = self.label_data[index % 20]
+			character_class = self.label
+		else:
+			image_name = self.label_data[index % 20]
+			character_class = self.label_target[index % 20]
+
 		image_path = join(self.target_folder, self._characters[character_class], image_name)
 		image = Image.open(image_path, mode='r').convert('L')
 
