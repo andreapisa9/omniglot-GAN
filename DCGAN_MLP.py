@@ -151,15 +151,15 @@ def train(args):
                             label = i, num_labels = NUM_LABELS, background = False, transform=transform, mask_mode=True)) 
                             for i in range(NUM_LABELS)]
 
-    #save loaders
-    torch.save({'train_loader': train_loader,
-                'test_loader': test_loader,
-                'loader_single_class': loader_single_class,
-                'loader_single_class_test': loader_single_class_test,
-                'loader_masked_class': loader_masked_class,
-                'loader_masked_class_test': loader_masked_class_test},
-               args.model_path + 'dataloaders.pth')
-    print('Loaders successfully saved.\n')
+        #save loaders
+        torch.save({'train_loader': train_loader,
+                    'test_loader': test_loader,
+                    'loader_single_class': loader_single_class,
+                    'loader_single_class_test': loader_single_class_test,
+                    'loader_masked_class': loader_masked_class,
+                    'loader_masked_class_test': loader_masked_class_test},
+                   args.model_path + 'dataloaders.pth')
+        print('Loaders successfully saved.\n')
     ######################################################################################
 
     #Assess loading correctness
@@ -342,7 +342,7 @@ def train(args):
         if (iteration + 1) == args.niterations:
 
             for f in os.listdir(args.model_path):
-                os.remove(os.path.join(dir, f))
+                os.remove(os.path.join(dir, f)) #not clear what dir is
             os.rmdir(args.model_path)
 
 if __name__ == '__main__':
