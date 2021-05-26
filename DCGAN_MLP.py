@@ -52,6 +52,7 @@ def get_args():
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
     parser.add_argument('--load_if_paused', type=bool, default=False, help='if checkpoint savings are found, restart from there')
+    parser.add_argument('--threshold_D_max', type=float, default=0.7, help='maximum accuracy for Discriminator to step')
     return parser.parse_args()
 
 def create_filtered_dataloader(args,data_list):
@@ -108,8 +109,9 @@ def train(args):
     if args.load_if_paused:
 
         try:
-            if os.path.exists(args.model_path):
+            if os.path.exists(args.model_path + 'dataloaders.pth'):
                 dataloaders = torch.load(args.model_path + 'dataloaders.pth')
+                    
                 train_loader = dataloaders["train_loader"]
                 test_loader = dataloaders["test_loader"]
                 loader_single_class = dataloaders["loader_single_class"]

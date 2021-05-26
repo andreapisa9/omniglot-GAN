@@ -12,6 +12,7 @@ import torchvision.utils as vutils
 import matplotlib.animation as animation
 from copy import deepcopy
 from random import randrange
+from torch.autograd import Variable
 
 
 
@@ -174,6 +175,17 @@ class Trainer(object):
             errD_real = errD_real + err_out_cls
             # Calculate gradients for D in backward pass
             errD_real.backward()
+            score = Variable(torch.ones(batch_size))
+            _, cd, wd, hd = outputD.size()
+            D_output_size = cd * wd * hd
+
+            clamped_output_D = outputD.clamp(0, 1)
+            clamped_output_D = torch.round(clamped_output_D)
+            for acc_i in range(batch_size):
+                score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size
+
+            real_acc = torch.mean(score)
+
             D_x = output.mean().item()
 
             ## Train with all-fake batch
@@ -196,11 +208,26 @@ class Trainer(object):
             errD_fake = errD_fake + err_out_cls
             #backpropagate
             errD_fake.backward()
+
+            score = Variable(torch.ones(batch_size))
+            _, cd, wd, hd = outputD.size()
+            D_output_size = cd * wd * hd
+
+            clamped_output_D = outputD.clamp(0, 1)
+            clamped_output_D = torch.round(clamped_output_D)
+            for acc_i in range(batch_size):
+                score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size
+
+            fake_acc = torch.mean(1 - score)
+
             # Update D
             #if accuracy > 0.7 , no step
-            self.optimizer_D.step()
-            # Add the gradients from the all-real and all-fake batches
-            errD = errD_real + errD_fake
+            D_acc = (real_acc + fake_acc) / 2
+
+            if D_acc.data[0] < args.threshold_D_max:
+                self.optimizer_D.step()
+                # Add the gradients from the all-real and all-fake batches
+                errD = errD_real + errD_fake
 
 
             self.reset_grad()
