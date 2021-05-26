@@ -19,6 +19,7 @@ from torch.autograd import Variable
 class Trainer(object):
     def __init__(self, args, models, optimizers, device, fixed_noise):
         
+        self.args = args
         self.device = device
         self.fixed_noise = fixed_noise
 
@@ -130,7 +131,6 @@ class Trainer(object):
         #Classify out_cls as real
         errG = errG + self.lambda_cls*err_out_cls
         
-        
         # Calculate gradients for G
         errG.backward()
         D_G_z2 = output.mean().item()
@@ -147,8 +147,11 @@ class Trainer(object):
             innerepochs = self.innerepochs
         for i in range(innerepochs): #inner = 20 for training, inner = 100 for test
             data = next(iter(single_loader))
+            data = [1 - d for d in data]
             masked_data = next(iter(masked_loader))
+            masked_data = [1 - md for md in masked_data]
             data_full = next(iter(train_loader))
+            data_full = [1 - df for df in data_full]
             ############################
             # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
             ###########################
@@ -175,13 +178,12 @@ class Trainer(object):
             errD_real = errD_real + err_out_cls
             # Calculate gradients for D in backward pass
             errD_real.backward()
-            score = Variable(torch.ones(batch_size))
-            _, cd, wd, hd = outputD.size()
-            D_output_size = cd * wd * hd
+            score = Variable(torch.ones(self.batch_size))
+            D_output_size = output.size()[0]
 
-            clamped_output_D = outputD.clamp(0, 1)
+            clamped_output_D = output.clamp(0, 1)
             clamped_output_D = torch.round(clamped_output_D)
-            for acc_i in range(batch_size):
+            for acc_i in range(self.batch_size):
                 score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size
 
             real_acc = torch.mean(score)
@@ -209,25 +211,27 @@ class Trainer(object):
             #backpropagate
             errD_fake.backward()
 
-            score = Variable(torch.ones(batch_size))
-            _, cd, wd, hd = outputD.size()
-            D_output_size = cd * wd * hd
+            score = Variable(torch.ones(self.batch_size))
+            D_output_size = output.size()[0]
 
-            clamped_output_D = outputD.clamp(0, 1)
+            clamped_output_D = output.clamp(0, 1)
             clamped_output_D = torch.round(clamped_output_D)
-            for acc_i in range(batch_size):
+            for acc_i in range(self.batch_size):
                 score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size
-
             fake_acc = torch.mean(1 - score)
 
             # Update D
             #if accuracy > 0.7 , no step
             D_acc = (real_acc + fake_acc) / 2
+            if i % 20 == 0: print(D_acc, '---->')
 
-            if D_acc.data[0] < args.threshold_D_max:
+            if D_acc.item() < self.args.threshold_D_max:
+                if i % 20 == 0: print('Discriminator keeps learning\n')
                 self.optimizer_D.step()
                 # Add the gradients from the all-real and all-fake batches
                 errD = errD_real + errD_fake
+            else: #do not make the Discriminator learn, it has a big advantage on the Generator and needs to slow down
+                print("Skipping Discriminator step...\n")
 
 
             self.reset_grad()

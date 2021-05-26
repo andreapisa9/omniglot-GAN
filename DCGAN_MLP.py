@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
-from invert_transform import InvertTransform
+#from invert_transform import InvertTransform
 import torch.optim as optim
 import torchvision.datasets as datasets
 import numpy as np
@@ -29,8 +29,8 @@ matplotlib.style.use('ggplot')
 plot = True
 
 '''
-La versione standard è quella che usa i due MLP
-La versione noise è quella dove usa il solo rumore (per dimostrare che senza MLPO non va)
+La versione standard e' quella che usa i due MLP
+La versione noise e' quella dove usa il solo rumore (per dimostrare che senza MLPO non va)
 La versione mlp_mean_std usa un solo MLP e il reparametrization trick
 La versione concat fa 30% classe 70% rumore
 '''
@@ -85,7 +85,7 @@ def train(args):
     transform = transforms.Compose([
         transforms.Resize((args.image_size, args.image_size)),
         transforms.ToTensor(),
-        InvertTransform()#,
+        #InvertTransform(),
         #transforms.Normalize(((0.5,), (0.5, )))
         ])
 
@@ -170,7 +170,9 @@ def train(args):
     #Assess loading correctness
     for i in range(NUM_LABELS):
         sc_batch,_ = next(iter(loader_single_class_test[i]))
+        sc_batch = 1 - sc_batch
         masked_batch,_ = next(iter(loader_masked_class_test[i]))
+        masked_batch = 1 - masked_batch
 
         print("SAVING IMGS {}".format(i))
         save_image(sc_batch,f"./loaders_imgs/sc_{i}.png")
