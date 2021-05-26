@@ -139,8 +139,12 @@ class Trainer(object):
         return errG
 
 
-    def train_GAN_on_task(self, single_loader, masked_loader, train_loader):
-        for i in range(self.innerepochs):
+    def train_GAN_on_task(self, single_loader, masked_loader, train_loader, test_mode=False):
+        if test_mode:
+            innerepochs = 100
+        else:
+            innerepochs = self.innerepochs
+        for i in range(innerepochs): #inner = 20 for training, inner = 100 for test
             data = next(iter(single_loader))
             masked_data = next(iter(masked_loader))
             data_full = next(iter(train_loader))
@@ -193,6 +197,7 @@ class Trainer(object):
             #backpropagate
             errD_fake.backward()
             # Update D
+            #if accuracy > 0.7 , no step
             self.optimizer_D.step()
             # Add the gradients from the all-real and all-fake batches
             errD = errD_real + errD_fake
@@ -221,10 +226,6 @@ class Trainer(object):
 
 
     def generate_sample(self):
-        '''Ragiono ad alta voce:
-        il main chiama generate_samples n volte in un for;
-        generate_samples chiama MLP_pass e model_G n volte, quindi.
-        Come fanno MLP_pass e model_G a dare lo stesso risultato n volte? E' per via di torch.no_grad()?'''
         self.out_z = self.MLP_pass(self.fixed_noise, self.feat) 
         out_G = self.model_G(self.out_z.detach())  
         # return real images concatenated with generated images    

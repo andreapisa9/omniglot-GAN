@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
+from invert_transform import InvertTransform
 import torch.optim as optim
 import torchvision.datasets as datasets
 import numpy as np
@@ -34,6 +35,7 @@ La versione mlp_mean_std usa un solo MLP e il reparametrization trick
 La versione concat fa 30% classe 70% rumore
 '''
 
+#read and save command line arguments as variables
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset') #20
@@ -42,7 +44,7 @@ def get_args():
     parser.add_argument('--nz', type=int, default=100, help='size of input noise')
     parser.add_argument('--lr', type=float, default=0.0002, help='training learning rate')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for Adam')
-    parser.add_argument('--innerepochs', type=int, default=5, help='number of meta-iterations')
+    parser.add_argument('--innerepochs', type=int, default=5, help='number of meta-iterations') #20
     parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate') #0.1
     parser.add_argument('--niterations', type=int, default=40000, help='total training iterations')
     parser.add_argument('--sample_path', type=str, default='./samples/', help='sample images folder')
@@ -81,8 +83,9 @@ def train(args):
 
     transform = transforms.Compose([
         transforms.Resize((args.image_size, args.image_size)),
-        transforms.ToTensor()#,
-        #transforms.Normalize((0.1307,), (0.3081,))
+        transforms.ToTensor(),
+        InvertTransform()#,
+        #transforms.Normalize(((0.5,), (0.5, )))
         ])
 
     # load Omniglot
@@ -303,7 +306,7 @@ def train(args):
                 single_loader_test = loader_single_class_test[n] #selezioni il loader della classe n
                 masked_loader_test = loader_masked_class_test[n]
                 # update the network on a single class
-                err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, train_loader)
+                err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True)
 
                 with torch.no_grad():
                     out_imgs_fake = trainer.generate_sample().detach().cpu()
@@ -318,7 +321,7 @@ def train(args):
                 models["MLP_cls"].load_state_dict(weights_before_MLP_cls)
 
         # save models
-        if iteration%2000 == 0:
+        if iteration%50 == 0:
             print("Saving checkpoint...\n")
             torch.save(
                 {'iteration': iteration,
