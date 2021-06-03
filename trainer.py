@@ -122,7 +122,7 @@ class Trainer(object):
         
         fake = self.model_G(out_z.detach())
 
-        output, out_cls, _ = self. model_D(fake)
+        output, out_cls, _ = self.model_D(fake)
         output = output.view(-1)
         out_cls = out_cls.view(-1)
         # Calculate G's loss based on this output
@@ -142,7 +142,7 @@ class Trainer(object):
 
     def train_GAN_on_task(self, single_loader, masked_loader, train_loader, test_mode=False):
         if test_mode:
-            innerepochs = 100
+            innerepochs = 5*self.innerepochs
         else:
             innerepochs = self.innerepochs
         for i in range(innerepochs): #inner = 20 for training, inner = 100 for test
@@ -167,7 +167,9 @@ class Trainer(object):
                 continue
 
             # Forward pass real batch through D
-            output, out_cls, feat = self.model_D(real_cpu)
+            output, out_cls, feat = self.model_D(real_cpu) #(Tensor[64x1x1] mean~0.7,
+                                                           # Tensor[64x1x1] mean~0.7,
+                                                           # Tensor[64x256] mean~0.3)
             
             output = output.view(-1)
             out_cls = out_cls.view(-1)
@@ -179,12 +181,14 @@ class Trainer(object):
             # Calculate gradients for D in backward pass
             errD_real.backward()
             score = Variable(torch.ones(self.batch_size))
-            D_output_size = output.size()[0]
+            #cd = out_cls.size(0) #64
+            #wd, hd = feat.size() #64, 256
+            D_output_size = 1 #cd*wd*hd
 
             clamped_output_D = output.clamp(0, 1)
             clamped_output_D = torch.round(clamped_output_D)
             for acc_i in range(self.batch_size):
-                score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size
+                score[acc_i] = torch.sum(clamped_output_D[acc_i]) / D_output_size #mean 0.7/64 ~ 0.0110
 
             real_acc = torch.mean(score)
 
@@ -212,7 +216,8 @@ class Trainer(object):
             errD_fake.backward()
 
             score = Variable(torch.ones(self.batch_size))
-            D_output_size = output.size()[0]
+            #cd = out_cls.size(0) #64
+            #wd, hd = feat.size() #64, 256
 
             clamped_output_D = output.clamp(0, 1)
             clamped_output_D = torch.round(clamped_output_D)
@@ -223,16 +228,14 @@ class Trainer(object):
             # Update D
             #if accuracy > 0.7 , no step
             D_acc = (real_acc + fake_acc) / 2
-            if i % 20 == 0: print(D_acc, '---->')
+            if i % 20 == 0: print("D_ACC = ", D_acc.item())
 
             if D_acc.item() < self.args.threshold_D_max:
-                if i % 20 == 0: print('Discriminator keeps learning\n')
                 self.optimizer_D.step()
                 # Add the gradients from the all-real and all-fake batches
                 errD = errD_real + errD_fake
             else: #do not make the Discriminator learn, it has a big advantage on the Generator and needs to slow down
-                print("Skipping Discriminator step...\n")
-
+                errD = errD_real + errD_fake
 
             self.reset_grad()
             out_real, out_dom, _ = self.model_D(fake)
