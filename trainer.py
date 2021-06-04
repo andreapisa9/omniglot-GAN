@@ -228,7 +228,8 @@ class Trainer(object):
             # Update D
             #if accuracy > 0.7 , no step
             D_acc = (real_acc + fake_acc) / 2
-            if i % 20 == 0: print("D_ACC = ", D_acc.item())
+            if (i % 10 == 0 or i == innerepochs - 1): print(f"D_ACC{i} = {D_acc.item()}")
+            if (i == innerepochs - 1): print("-----")
 
             if D_acc.item() < self.args.threshold_D_max:
                 self.optimizer_D.step()
