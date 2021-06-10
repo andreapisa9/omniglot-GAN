@@ -253,11 +253,12 @@ class Trainer(object):
 
             self.update_MLP(err_mlp)
             
-            errG = self.train_G()
         # Output training stats
             self.feat = feat
             self.fake = fake
             self.real_cpu = real_cpu
+
+            errG = self.train_G()
 
         return errD, err_mlp, errG
 
