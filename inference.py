@@ -37,11 +37,13 @@ model_D = Discriminator().cuda()
 model_MLP = MLP().cuda()
 model_MLP_cls = MLP_cls().cuda()
 
-model_G = torch.load('models/G.pth')
+if (os.path.exists(args.model_path)):
+    checkpoint = torch.load(args.model_path + "models.pth")
+model_G = torch.load(args.model_path + 'models/models_G.pth')
 #model_G.eval()
-model_D = torch.load('models/D.pth')
-model_MLP = torch.load('models/MLP.pth')
-model_MLP_cls = torch.load('models/MLP_cls.pth')
+model_D = torch.load(args.model_path + 'models/models_D.pth')
+model_MLP = torch.load(args.model_path +'models/models_MLP.pth')
+model_MLP_cls = torch.load(args.model_path + 'models/models_MLP_cls.pth')
 
 
 # Setup Adam optimizers for both G and D
@@ -108,7 +110,7 @@ for n in range(NUM_LABELS):
     single_loader_test = loader_single_class_test[n] #selezioni il loader della classe n
     masked_loader_test = loader_masked_class_test[n]
     # aggiorno la rete su una singola classe
-    err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader)
+    err_D, err_MLP, _ = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True, test_innerepochs=5*args.innerepochs)
     #err_G = trainer.train_G()
 
     with torch.no_grad():

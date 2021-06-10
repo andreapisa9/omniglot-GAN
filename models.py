@@ -74,7 +74,6 @@ class Generator(nn.Module):
 
             nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
             nn.Tanh()
-
         )
 
 

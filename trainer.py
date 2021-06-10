@@ -140,9 +140,9 @@ class Trainer(object):
         return errG
 
 
-    def train_GAN_on_task(self, single_loader, masked_loader, train_loader, test_mode=False):
+    def train_GAN_on_task(self, single_loader, masked_loader, train_loader, test_mode=False, test_innerepochs=20):
         if test_mode:
-            innerepochs = 5*self.innerepochs
+            innerepochs = test_innerepochs
         else:
             innerepochs = self.innerepochs
         for i in range(innerepochs): #inner = 20 for training, inner = 100 for test
@@ -253,11 +253,13 @@ class Trainer(object):
 
             self.update_MLP(err_mlp)
             
+            errG = self.train_G()
         # Output training stats
             self.feat = feat
             self.fake = fake
             self.real_cpu = real_cpu
-        return errD, err_mlp
+
+        return errD, err_mlp, errG
 
 
     def generate_sample(self):

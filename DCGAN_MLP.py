@@ -38,17 +38,17 @@ La versione concat fa 30% classe 70% rumore
 #read and save command line arguments as variables
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset') #20
+    parser.add_argument('--num_labels', type=int, default=10, help='number of labels in the dataset')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch size')
     parser.add_argument('--image_size', type=int, default=32, help='image size')
     parser.add_argument('--nz', type=int, default=100, help='size of input noise')
     parser.add_argument('--lr', type=float, default=0.0002, help='training learning rate')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for Adam')
-    parser.add_argument('--innerepochs', type=int, default=5, help='number of meta-iterations') #20
-    parser.add_argument('--outerstepsize0', type=float, default=0.01, help='meta learning rate') #0.1
+    parser.add_argument('--innerepochs', type=int, default=20, help='number of meta-iterations') #old default = 20
+    parser.add_argument('--outerstepsize0', type=float, default=0.001, help='meta learning rate') #old default = 0.01
     parser.add_argument('--niterations', type=int, default=40000, help='total training iterations')
-    parser.add_argument('--sample_path', type=str, default='./samples/', help='sample images folder')
-    parser.add_argument('--model_path', type=str, default='./checkpoint/', help='models folder')
+    parser.add_argument('--sample_path', type=str, default='../samples/', help='sample images folder')#old default = "./samples/"
+    parser.add_argument('--model_path', type=str, default='../checkpoint/', help='models folder')#old default = "./checkpoint/"
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
     parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
     parser.add_argument('--load_if_paused', type=bool, default=False, help='if checkpoint savings are found, restart from there')
@@ -75,6 +75,7 @@ def train(args):
         os.mkdir(args.sample_path)
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
+    os.mkdir(args.model_path + "models/")
     if not os.path.exists("./loaders_imgs/"):
         os.mkdir("./loaders_imgs/")
     
@@ -264,6 +265,7 @@ def train(args):
         random = randrange(NUM_LABELS)
 
         #clone models
+        #weights_before_G = deepcopy(models["G"].state_dict())
         weights_before_D = deepcopy(models["D"].state_dict())
         weights_before_MLP = deepcopy(models["MLP"].state_dict())
         weights_before_MLP_cls = deepcopy(models["MLP_cls"].state_dict())
@@ -273,14 +275,19 @@ def train(args):
         masked_loader = loader_masked_class[random]
         
         # train the GAN model with task images for N meta iterations
-        err_D, err_MLP = trainer.train_GAN_on_task(single_loader, masked_loader, train_loader)
+        err_D, err_MLP, err_G = trainer.train_GAN_on_task(single_loader, masked_loader, train_loader)
         # train G for 1 iteration
-        err_G = trainer.train_G()
+        #err_G = trainer.train_G()
 
         # Interpolate between current weights and trained weights from this task
         # I.e. (weights_before - weights_after) is the meta-gradient
         outerstepsize = args.outerstepsize0 * (1 - iteration / args.niterations) # linear schedule
-        
+
+        # weights_after_G = models["G"].state_dict()
+        # models["G"].load_state_dict({name : 
+        #     weights_before_G[name] + (weights_after_G[name] - weights_before_G[name]) * outerstepsize 
+        #     for name in weights_before_G})
+
         weights_after_D = models["D"].state_dict()
         models["D"].load_state_dict({name : 
             weights_before_D[name] + (weights_after_D[name] - weights_before_D[name]) * outerstepsize 
@@ -303,6 +310,7 @@ def train(args):
         if plot and (iteration==0 or iteration%1000 == 0 or iteration+1==args.niterations):
 
             for n in range(NUM_LABELS):
+                #weights_before_G = deepcopy(models["G"].state_dict())
                 weights_before_D = deepcopy(models["D"].state_dict()) # save snapshot before evaluation
                 weights_before_MLP = deepcopy(models["MLP"].state_dict()) # save snapshot before evaluation
                 weights_before_MLP_cls = deepcopy(models["MLP_cls"].state_dict())
@@ -310,7 +318,7 @@ def train(args):
                 single_loader_test = loader_single_class_test[n] #selezioni il loader della classe n
                 masked_loader_test = loader_masked_class_test[n]
                 # update the network on a single class
-                err_D, err_MLP = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True)
+                err_D, err_MLP, _ = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True, test_innerepochs=5*args.innerepochs)
 
                 with torch.no_grad():
                     out_imgs_fake = trainer.generate_sample().detach().cpu()
@@ -320,6 +328,7 @@ def train(args):
                 save_image(out_imgs_fake, args.sample_path + f"{iteration}_{n}.png") #aggiungi percorso: "path/iterazione_classe.png" es "pippo/20000_3.png"
                     
                 # restore the model to before the update
+                #models["G"].load_state_dict(weights_before_G)
                 models["D"].load_state_dict(weights_before_D) # restore from snapshot  
                 models["MLP"].load_state_dict(weights_before_MLP)
                 models["MLP_cls"].load_state_dict(weights_before_MLP_cls)
@@ -339,17 +348,18 @@ def train(args):
                  'optimizer_MLP_cls_state_dict': optimizers["MLP_cls"].state_dict()},
                  args.model_path + "models.pth")
             print("Checkpoint successfully saved.\n")
-            #torch.save(models["D"], args.model_path + "models_D.pth")
-            #torch.save(models["G"], args.model_path + "models_G.pth")
-            #torch.save(models["MLP"], args.model_path + "models_MLP.pth")
-            #torch.save(models["MLP_cls"], args.model_path + "models_MLP_cls.pth")
+
+            torch.save(models["D"], args.model_path + "models/models_D.pth")
+            torch.save(models["G"], args.model_path + "models/models_G.pth")
+            torch.save(models["MLP"], args.model_path + "models/models_MLP.pth")
+            torch.save(models["MLP_cls"], args.model_path + "models/models_MLP_cls.pth")
 
         torch.cuda.empty_cache()
 
         if (iteration + 1) == args.niterations:
 
             for f in os.listdir(args.model_path):
-                os.remove(os.path.join(dir, f)) #not clear what dir is
+                os.remove(os.path.join(dir, f))
             os.rmdir(args.model_path)
 
 if __name__ == '__main__':
