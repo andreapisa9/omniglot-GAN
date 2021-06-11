@@ -75,7 +75,8 @@ def train(args):
         os.mkdir(args.sample_path)
     if not os.path.exists(args.model_path):
         os.mkdir(args.model_path)
-    os.mkdir(args.model_path + "models/")
+    if not os.path.exists(args.model_path + "models/"):
+        os.mkdir(args.model_path + "models/")
     if not os.path.exists("./loaders_imgs/"):
         os.mkdir("./loaders_imgs/")
     
@@ -349,14 +350,14 @@ def train(args):
                  args.model_path + "models.pth")
             print("Checkpoint successfully saved.\n")
 
+        torch.cuda.empty_cache()
+
+        if (iteration + 1) == args.niterations:
+
             torch.save(models["D"], args.model_path + "models/models_D.pth")
             torch.save(models["G"], args.model_path + "models/models_G.pth")
             torch.save(models["MLP"], args.model_path + "models/models_MLP.pth")
             torch.save(models["MLP_cls"], args.model_path + "models/models_MLP_cls.pth")
-
-        torch.cuda.empty_cache()
-
-        if (iteration + 1) == args.niterations:
 
             for f in os.listdir(args.model_path):
                 os.remove(os.path.join(dir, f))
