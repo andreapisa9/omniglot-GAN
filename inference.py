@@ -66,8 +66,9 @@ optimizers = {
     "MLP_cls" : optimizer_MLP_cls
 }
 
-random_noise = torch.randn(64, args.nz + 100, 1, 1, device=device)
+random_noise = torch.randn(64, args.nz, 1, 1, device=device)
 out_imgs = model_G(random_noise).detach().cpu()
+if not os.path.exists("./inference"): os.mkdir("./inference")
 save_image(out_imgs,"inference/no_meta_inference.png")
 
 transform = transforms.Compose([
@@ -110,7 +111,7 @@ for n in range(NUM_LABELS):
     single_loader_test = loader_single_class_test[n] #selezioni il loader della classe n
     masked_loader_test = loader_masked_class_test[n]
     # aggiorno la rete su una singola classe
-    err_D, err_MLP, _ = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True, test_innerepochs=5*args.innerepochs)
+    err_D, err_MLP,_ = trainer.train_GAN_on_task(single_loader_test, masked_loader_test, test_loader, test_mode=True, test_innerepochs=5*args.innerepochs)
     #err_G = trainer.train_G()
 
     with torch.no_grad():

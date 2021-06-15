@@ -50,7 +50,7 @@ def get_args():
     parser.add_argument('--sample_path', type=str, default='../samples/', help='sample images folder')#old default = "./samples/"
     parser.add_argument('--model_path', type=str, default='../checkpoint/', help='models folder')#old default = "./checkpoint/"
     parser.add_argument('--lambda_cls', type=int, default=10, help='weight of generator classification loss')
-    parser.add_argument('--mode', type=str, default='standard', help='training mode - standard, mlp_mean_std, concat, noise')
+    parser.add_argument('--mode', type=str, default='mlp_mean_std', help='training mode - standard, mlp_mean_std, concat, noise')
     parser.add_argument('--load_if_paused', type=bool, default=False, help='if checkpoint savings are found, restart from there')
     parser.add_argument('--threshold_D_max', type=float, default=0.7, help='maximum accuracy for Discriminator to step')
     return parser.parse_args()
